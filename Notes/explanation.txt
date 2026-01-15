@@ -1,0 +1,38 @@
+In Flask (Jinja2 templates), when you output a variable like {{ chatbot_response }}, Jinja automatically escapes HTML — meaning <b>hi</b> will display literally as <b>hi</b> instead of hi.
+Adding | safe tells Jinja:
+“This content is safe, don’t escape it — render it as real HTML.”
+
+ <!-- <form method="POST">
+        <input type="text" name="user_input" placeholder="Ask me anything..." style="width: 300px;">
+        <button type="submit">Send</button>
+    </form> -->
+
+<!--before chat history code-->
+<!--    {% if chatbot_response %}-->
+<!--        <div class="response">-->
+<!--            {{ chatbot_response | safe  }}-->
+<!--        </div>-->
+<!--    {% endif %}-->
+
+return render_template("index.html", chatbot_response=ai_response_text)
+In your previous code, you were passing chatbot_response=ai_response_text to the template.
+Now that you are using chat_history, you don't need this anymore.
+The AI's latest response is already inside the history list because you saved it to the database!
+
+why session has key? why we need it?
+
+
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
+model = genai.GenerativeModel("gemini-2.0-flash")
+city = model.generate_content(f"Extract the city name from: '{user_input}'").text.strip()
+response = model.generate_content(prompt)
+ai_response_text = response.text
+
+
+Structured Prompting.- instead of calling gemini api whenever or wherever needed (using many calls) , we
+can use structured prompting - We will ask Gemini to perform all three tasks (Validation, City Extraction,
+and Timeline Detection) in one single request and return the results as a JSON object.
+
+city = ask_gemini(f"Extract the city name from: '{user_input}'")
+user_timeline = ask_gemini(f"Does this query refer to a future date like 'next week' or 'tomorrow'? "
+                           f"User input: '{user_input}'.Return 'future' or 'now'.")

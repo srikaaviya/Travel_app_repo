@@ -1,0 +1,108 @@
+import os, requests, database
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, session, redirect
+from google import genai
+import markdown2
+
+
+load_dotenv()
+app = Flask(__name__)
+SECRET_KEY =  os.getenv("FLASK_SECRET_KEY")   #for session check
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
+
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+app.secret_key = SECRET_KEY
+database.create_db()
+
+def get_weather(city):
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+    res = requests.get(url)
+    if res.status_code == 200:
+        data = res.json()
+        desc = data['weather'][0]['description']
+        temp = data['main']['temp']
+        min_t = data['main']['temp_min']
+        max_t = data['main']['temp_max']
+        return f"{desc}, {int(temp)}°C (min {int(min_t)}°C / max {int(max_t)}°C)"
+    return None
+
+def ask_gemini(prompt):
+    response_text = ''
+    try:
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        if response.text:
+            response_text = response.text.strip()
+        else:
+            response_text = "model couldn't generate a response."
+
+    except Exception as e:
+        if "429" in str(e) or "Quota" in str(e):
+            response_text = "(Quota exceeded)"
+        else:
+            response_text = "Pycharm error"
+        print(f"Error: {e}")
+
+    return response_text
+
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    history = []
+
+    if request.method == "GET":
+        # first time types the URL, we clear the memory!
+        session.clear()
+        return render_template("index.html", chat_history=[])
+
+    if request.method == "POST":
+        user_input = request.form["user_input"]
+
+        city = ask_gemini(f"Extract the city name from: '{user_input}'")
+        weather_info = get_weather(city)
+        # print(weather_info)
+
+        if weather_info:
+            prompt = f"""
+            You are a travel assistant.
+
+            Generate a detailed, well-formatted packing list for a trip to {city}.
+            Include current day Maximum and Minimum temperature of {city}
+            Use Markdown formatting:
+            - Clear section titles (like **Clothing**, **Essentials**, etc.)
+            - Bulleted lists
+            - Line breaks between sections
+            - End with a short, warm travel wish.
+            """
+        else:
+            prompt = f"You are a travel assistant. Suggest a packing list for: {user_input}"
+
+        ai_response_text = ask_gemini(prompt)
+        clean_html_response = markdown2.markdown(ai_response_text)
+
+        # saving to trip table
+        if 'current_trip_id' not in session:
+            new_trip_id = database.add_trip_details(city, weather_info or "Unknown", clean_html_response)
+            session['current_trip_id'] = new_trip_id
+            session.modified = True
+
+        # saving to chat_history
+        active_id = session['current_trip_id']
+        database.save_messages(active_id, 'user', user_input)
+        database.save_messages(active_id, 'assistant', clean_html_response)
+
+    if 'current_trip_id' in session:
+        history = database.get_chat_history(session['current_trip_id'])
+
+    # RETURN: Pass the history list to the template
+    return render_template("index.html", chat_history=history)
+
+@app.route("/reset")
+def reset():
+    session.clear()     #clears the current trip memory
+    return redirect("/")    #This sends the user back to the fresh home page
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -1,0 +1,30 @@
+combined_prompt = f"""
+            Analyze the following travel-related user input: "{user_input}"
+
+            Return ONLY a JSON object with these keys:
+            1. "is_valid": boolean (false if the place is fake, like 'Middle Earth' or 'North Pole')
+            2. "city": string (the name of the city, or "None")
+            3. "timeline": string ("future" if they mention 'next week', 'tomorrow', etc., otherwise "now")
+
+            JSON:
+            """
+
+
+ weather_prompt = f"""
+            You are a travel assistant.
+
+            Today is {current_date}. The user is traveling {user_timeline} to {city}.
+            Weather data: {weather_info}.
+
+            Generate a detailed, well-formatted packing list for a trip to {city}.
+            Include Maximum and Minimum temperature of {city} from {weather_info}
+            Use Markdown formatting:
+            - Clear section titles (like **Clothing**, **Essentials**, etc.)
+            - Bulleted lists
+            - Line breaks between sections
+            - End with a short, warm travel wish.
+
+            Rules:
+                - DO NOT display the current date or today's date in your response.
+                - Focus only on the packing list and the temperatures provided.
+            """

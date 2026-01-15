@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!--charset="UTF-8" lets you show emojis or special characters (like 💬).-->
+
+    <title>Travel Assistant</title>
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+        }
+        textarea, input[type=text] {
+            width: 40%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .response {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px; /* Adds space between "You" and "Buddy" */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .chat-container {
+        max-height: 500px;
+        overflow-y: auto;  /* Adds a vertical scrollbar only when needed */
+        padding: 15px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column-reverse; /* Optional: keeps the latest message at the bottom */
+        }
+
+        .message-content ul, .message-content ol {
+            margin-left: 20px; /* Indents the bullets */
+            margin-bottom: 10px;
+        }
+
+        .message-content li {
+            margin-bottom: 5px; /* Adds space between items */
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Travel Packing Assistant</h1>
+
+    <div style="margin-top: 20px;">
+        <a href="/reset" style="text-decoration: none;">
+            <button type="button" style="background-color: #e74c3c; color: white; border: none; border-radius: 5px; padding: 10px 15px; cursor: pointer;">
+                Start New Trip
+            </button>
+        </a>
+    </div>
+
+    <form action="/" method="post">
+        <label for="user_input">Enter your destination:</label>
+        <input type="text" id="user_input" name="user_input" placeholder="e.g., New York City" required>
+        <button type="submit">Get Packing List</button>
+    </form>
+
+    <div class = "chat-container">
+        {% if chat_history %}
+            <div id="chat-window">
+                {% for chat in chat_history %}
+                    <div class="response">
+                        <strong>
+                            {% if chat['role'] == 'user' %}
+                                🙋 You:
+                            {% else %}
+                                🌴 Travel Buddy:
+                            {% endif %}
+                        </strong>
+                        <div class="message-content">
+                            {{ chat['message'] | safe }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+                <p style="text-align: center; color: #888;">No messages yet. Start your journey!</p>
+        {% endif %}
+    </div>>
+
+<!--{% if chatbot_response %} = means: only show this section if Flask sent a variable named chatbot_response.
+{{ chatbot_response }} = print the variable’s value (the Gemini reply).
+| safe tells Flask: "I trust this content, go ahead and render the formatting."
+{% endif %} closes the conditional. -->
+
+</body>
+</html>

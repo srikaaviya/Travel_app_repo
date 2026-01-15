@@ -1,0 +1,9 @@
+# PyCharm settings
+.idea/
+
+# Python temporary files
+__pycache__/
+*.pyc
+
+# OS generated files
+.DS_Store
