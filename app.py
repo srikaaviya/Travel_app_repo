@@ -24,10 +24,10 @@ def get_weather(city, user_days):
             min_t, max_t = 0, 0
             temp = 0
             for items in data['list']:
-                temp = int(items['main']['temp'])
+                temp += int(items['main']['temp'])
                 min_t += int(items['main']['temp_min'])
                 max_t += int(items['main']['temp_max'])
-            return f"{int(temp)}°C (minimum_temp {(min_t // 40)}°C / maximum_temp {(max_t // 40)}°C)"
+            return f"{int(temp // 40)}°C (minimum_temp {(min_t // 40)}°C / maximum_temp {(max_t // 40)}°C)"
         else:
             current = data['list'][0]
             desc = current['weather'][0]['description']
@@ -92,7 +92,7 @@ def index():
             is_valid = data.get("is_valid")
             city = data.get("city")
             user_timeline = data.get("timeline")
-        except:
+        except Exception as e:
             print(f"JSON Parsing failed: {e}")
             # Fallback if AI output isn't perfect JSON
             # setting london as default fallback. if have more api calls,
