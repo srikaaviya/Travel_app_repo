@@ -18,21 +18,50 @@ return render_template("index.html", chatbot_response=ai_response_text)
 In your previous code, you were passing chatbot_response=ai_response_text to the template.
 Now that you are using chat_history, you don't need this anymore.
 The AI's latest response is already inside the history list because you saved it to the database!
-
+-------------------------------------------------------------------------------------------
 why session has key? why we need it?
 
+-------------------------------------------------------------------------------------------
 
 genai.configure(api_key="YOUR_GEMINI_API_KEY")
 model = genai.GenerativeModel("gemini-2.0-flash")
 city = model.generate_content(f"Extract the city name from: '{user_input}'").text.strip()
 response = model.generate_content(prompt)
 ai_response_text = response.text
-
+-------------------------------------------------------------------------------------------
 
 Structured Prompting.- instead of calling gemini api whenever or wherever needed (using many calls) , we
 can use structured prompting - We will ask Gemini to perform all three tasks (Validation, City Extraction,
 and Timeline Detection) in one single request and return the results as a JSON object.
+-------------------------------------------------------------------------------------------
 
 city = ask_gemini(f"Extract the city name from: '{user_input}'")
 user_timeline = ask_gemini(f"Does this query refer to a future date like 'next week' or 'tomorrow'? "
                            f"User input: '{user_input}'.Return 'future' or 'now'.")
+-------------------------------------------------------------------------------------------
+
+Why do we use b in the test? When Flask sends a response,
+it sends raw bytes over the network (like a file download).
+response.data gives us those raw bytes.
+The test checks: "Do these bytes contain the byte sequence for 'Travel Packing Assistant'?"
+--------------------------------------------------------------------------------------------
+
+app.config['TESTING'] = True
+It tells Flask: "If an error happens, do not hide it.
+Throw the full exception so my test can see exactly what broke."
+-------------------------------------------------------------------------------------------
+
+with client.session_transaction() as sess:
+This is how we "hack" the user's session.
+
+The Problem: In a real browser, data like "User ID" or "Current Trip" is stored in a
+secure cookie. You can't just edit a cookie easily.
+
+The Fix: This line opens up the "Session Cookie Jar" safely.
+client: Our fake browser session_transaction(): "Open the cookie jar."
+as sess: "Give me the contents as a dictionary called sess."
+Inside the block: We can say sess['current_trip_id'] = 1.
+This effectively forces the app to believe the user is already logged in or has a trip started,
+without us having to actually click through the UI to get there.
+-------------------------------------------------------------------------------------------
+

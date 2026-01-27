@@ -1,0 +1,7 @@
+flask
+python-dotenv
+requests
+google-genai
+markdown2
+pytest
+playwright
