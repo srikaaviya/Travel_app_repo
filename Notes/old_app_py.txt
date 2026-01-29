@@ -1,0 +1,203 @@
+import os, requests, database, json
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, session, redirect
+from google import genai
+from datetime import datetime
+import markdown2
+
+
+load_dotenv()
+app = Flask(__name__)
+SECRET_KEY = os.getenv("FLASK_SECRET_KEY")   #for session check
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+app.secret_key = SECRET_KEY
+database.create_db()
+
+def get_weather(city, user_days):
+    res = requests.get(f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric")
+    if res.status_code == 200:
+        data = res.json()
+        if user_days == 'future':
+            min_t, max_t = 0, 0
+            temp = 0
+            for items in data['list']:
+                temp += int(items['main']['temp'])
+                min_t += int(items['main']['temp_min'])
+                max_t += int(items['main']['temp_max'])
+            return (f"{int(temp // 40)}°C (min {(min_t // 40)}°C / max {(max_t // 40)}°C)", int(temp // 40))
+        else:
+            current = data['list'][0]
+            desc = current['weather'][0]['description']
+            temp = int(current['main']['temp'])
+            return (desc, temp)
+    return None
+
+def ask_gemini(prompt):
+    response_text = ''
+    try:
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        if response.text:
+            response_text = response.text.strip()
+        else:
+            response_text = "model couldn't generate a response."
+
+    except Exception as e:
+        if "503" in str(e) or "overloaded" in str(e):
+            response_text = "Server Overloaded"
+        elif "429" in str(e) or "Quota" in str(e):
+            response_text = "(Quota exceeded)"
+        else:
+            response_text = "Pycharm error"
+        print(f"Error: {e}")
+    return response_text
+
+
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    history = []
+
+    if request.method == "GET":
+        session.clear()
+        return render_template("index.html", chat_history=[])
+
+
+    if request.method == "POST":
+        user_input = request.form["user_input"]
+
+        # -----------------------------------------------------
+        # SCENARIO 1: ANSWERING THE AGENT'S QUESTION
+        # -----------------------------------------------------
+        if session.get('awaiting_preference'):
+            # The User just answered "Indoor" or "Outdoor"
+            trip_id = session.get('current_trip_id')
+
+            # 1. Retrieve the existing trip details (City & Weather)
+            conn = database.get_db_connection()
+            row = conn.execute('SELECT city, weather FROM trips WHERE id = ?', (trip_id,)).fetchone()
+            conn.close()
+
+            if not row:
+                session.clear()
+                return redirect("/")
+
+            city = row['city']
+            weather_desc = row['weather']
+
+            # 2. Record the User's Answer
+            database.save_messages(trip_id, 'user', user_input)
+
+            # 3. Generate Final Packing List
+            current_date = datetime.now().strftime("%B %d, %Y")
+            weather_prompt = f"""
+            You are a travel assistant.
+            Today is {current_date}.
+            Destination: {city}
+            Weather: {weather_desc}
+            User Preference: {user_input} (The user answered this because of bad weather).
+
+           Instructions:
+                1. Create a packing list that specifically addresses the user's preference ({user_input}).
+                2. If they said "Indoor", suggest museums, cafes, and waterproof gear.
+                3. If they said "Outdoor" despite the rain, suggest heavy-duty rain gear.
+                4. Use professional Markdown.
+            """
+
+            ai_response_text = ask_gemini(weather_prompt)
+            clean_html_response = markdown2.markdown(ai_response_text)
+
+            # 4. Save Final Response & Clear State
+            database.save_messages(trip_id, 'assistant', clean_html_response)
+            session.pop('awaiting_preference', None)
+
+        # -----------------------------------------------------
+        # SCENARIO 2: STARTING A NEW REQUEST
+        # -----------------------------------------------------
+        else:
+            # 1. Analyze Input
+            combined_prompt = f"""
+                Analyze this travel-related user input: "{user_input}"
+                Rules:
+                    1. If country mentioned, pick popular city.
+                    2. Identify timeline (now/future).
+                    3. Return valid JSON: {{"is_valid": true, "city": "Name", "timeline": "now/future"}}
+                """
+            raw_json = ask_gemini(combined_prompt)
+            try:
+                data = json.loads(raw_json.replace("```json", "").replace("```", ""))
+                is_valid = data.get("is_valid")
+                city = data.get("city")
+                user_timeline = data.get("timeline")
+            except Exception as e:
+                print(f"JSON Parsing failed: {e}")
+                is_valid, city, user_timeline = True, "London", "now"
+
+            # 2. Get Weather
+            # Now returns a Tuple: (description_str, temp_int)
+            weather_data = get_weather(city, user_timeline)
+
+            if weather_data:
+                weather_desc, temp_val = weather_data
+                weather_info = f"{weather_desc}, {temp_val}°C"
+            else:
+                weather_info = "Unknown"
+                temp_val = 20 # Safe fallback
+
+            # 3. Save Trip Initially (So we have an ID)
+            # We save a placeholder essentials for now
+            if 'current_trip_id' not in session:
+                new_trip_id = database.add_trip_details(city, weather_info, "Pending...")
+                session['current_trip_id'] = new_trip_id
+                session.modified = True
+
+            active_id = session['current_trip_id']
+            database.save_messages(active_id, 'user', user_input)
+
+            weather_lower = weather_info.lower()
+            # No more hacky string parsing needed! We have temp_val directly.
+            if ("rain" in weather_lower or "snow" in weather_lower or "drizzle" in weather_lower or
+                    "storm" in weather_lower or temp_val < 0):
+                reason = "snow/rain" if "snow" in weather_lower or "rain" in weather_lower \
+                    else "freezing temperatures"
+                agent_question = (f"I see {reason} ({weather_info}) in {city}. "
+                                  f"Are you planning mostly **Indoor** or **Outdoor** activities?")
+
+                # Convert the hardcoded markdown to HTML so it renders bold in the browser
+                html_question = markdown2.markdown(agent_question)
+                database.save_messages(active_id, 'assistant', html_question)
+                session['awaiting_preference'] = True
+
+            else:
+                # ✅ PROCEED! Normal Flow.
+                current_date = datetime.now().strftime("%B %d, %Y")
+                weather_prompt = f"""
+                You are a travel assistant.
+                Today is {current_date}.
+                Traveling to: {city} ({user_timeline}).
+                Weather: {weather_info}.
+
+                Instructions:
+                    1. Create a packing list based on the temp.
+                    2. Use Markdown.
+                """
+                ai_response_text = ask_gemini(weather_prompt)
+                clean_html_response = markdown2.markdown(ai_response_text)
+
+                database.save_messages(active_id, 'assistant', clean_html_response)
+
+    if 'current_trip_id' in session:
+        history = database.get_chat_history(session['current_trip_id'])
+
+    return render_template("index.html", chat_history=history)
+
+@app.route("/reset")
+def reset():
+    session.clear()     #clears the current trip memory
+    return redirect("/")    #This sends the user back to the fresh home page
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
