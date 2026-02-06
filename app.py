@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 # Initialize DB on start
-database.create_db()
+# database.create_db()
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -34,15 +34,17 @@ def index():
             
             # Use database module
             conn = database.get_db_connection()
-            row = conn.execute('SELECT city, weather FROM trips WHERE id = ?', (trip_id,)).fetchone()
+            cursor = conn.cursor()
+            cursor.execute('SELECT city, weather FROM trips WHERE id = %s', (trip_id,))
+            row = cursor.fetchone()
             conn.close()
             
             if not row:
                 session.clear()
                 return redirect("/")
 
-            city = row['city']
-            weather_desc = row['weather']
+            city = row[0]
+            weather_desc = row[1]
             
             database.save_messages(trip_id, 'user', user_input)
 
@@ -76,6 +78,17 @@ def index():
                     2. Return JSON: {{"is_valid": true, "city": "Name", "timeline": "now/future"}}
             """
             raw_json = ai_service.ask_gemini(analysis_prompt)
+            
+            # Handle errors
+            if "⚠️" in raw_json or "Sorry" in raw_json or "unavailable" in raw_json:
+                if 'current_trip_id' not in session:
+                    new_trip_id = database.add_trip_details("Unknown", "Unknown", "Error")
+                    session['current_trip_id'] = new_trip_id
+                    session.modified = True
+                database.save_messages(session['current_trip_id'], 'user', user_input)
+                database.save_messages(session['current_trip_id'], 'assistant', raw_json)
+                history = database.get_chat_history(session['current_trip_id'])
+                return render_template("index.html", chat_history=history)
             
             # Quick cleanup to ensure JSON parsing works
             try:

@@ -13,5 +13,10 @@ def ask_gemini(prompt):
         else:
             return "Model couldn't generate a response."
     except Exception as e:
+        error_str = str(e)
         print(f"AI Error: {e}")
-        return "Sorry, AI service is currently unavailable."
+        
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            return "⚠️ API quota exceeded. Please try again later."
+        else:
+            return "Sorry, AI service is currently unavailable."

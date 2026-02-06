@@ -1,4 +1,29 @@
 Upgrades to O:
 
 1. Readme
-2. Create routes.py, services.py
+
+
+Hardcoded Secrets in CI: ❌
+In test.yml, we wrote fake_key_for_ci. In a real company,
+if you accidentally committed a real key there, you'd be in trouble.
+(Fix: Use GitHub Secrets).
+
+No Type Hinting: ⚠️
+Python is dynamic, but professionals use Type Hints (def foo(a: str) -> int:).
+It makes code readable.
+
+Synchronous API Calls: 🐌
+requests.get() blocks the server. If OpenWeatherMap takes 5 seconds,
+your whole website freezes for everyone.
+(Fix: Use aiohttp or Background Tasks like Celery).
+
+Database Scalability: 💾
+SQLite locks the file on write. If 100 users try to save a trip at once,
+it might crash. (Fix: Use PostgreSQL).
+
+Error Handling (Catch-All): 🐛
+except Exception as e: is a bit lazy.
+It catches everything (even KeyboardInterrupt).
+It's better to catch specific errors (requests.ConnectionError).
+
+

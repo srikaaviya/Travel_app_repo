@@ -5,3 +5,4 @@ google-genai
 markdown2
 pytest
 playwright
+psycopg2-binary
