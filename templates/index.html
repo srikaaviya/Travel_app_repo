@@ -94,6 +94,14 @@
         {% endif %}
     </div>>
 
+    {% if chat_history %}
+    <form action="/send-email" method="post" style="margin-top: 20px;">
+        <label for="email">Send packing list to email:</label><br>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        <button type="submit">📧 Send to Email</button>
+    </form>
+    {% endif %}
+
 <!--{% if chatbot_response %} = means: only show this section if Flask sent a variable named chatbot_response.
 {{ chatbot_response }} = print the variable’s value (the Gemini reply).
 | safe tells Flask: "I trust this content, go ahead and render the formatting."

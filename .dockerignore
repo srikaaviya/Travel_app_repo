@@ -1,0 +1,10 @@
+#Stops Docker copying unnecessary files into the image:
+
+.env
+.gitignore
+__pycache__
+*.pyc
+travel.db
+*.md
+tests/
+Notes/

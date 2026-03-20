@@ -1,0 +1,10 @@
+before containerize
+# def get_db_connection():
+#     conn = psycopg2.connect(
+#         dbname="travel_app_db",
+#         user="srikaaviyaramadeve",
+#         host="localhost",
+#         port="5432"
+#     )
+#     return conn
+

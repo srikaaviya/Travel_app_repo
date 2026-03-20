@@ -1,0 +1,59 @@
+#spin up two machines — one runs Flask using my code,
+#one runs Postgres using an official image.
+#Connect them so Flask can reach Postgres using the name db.
+#Load my secrets from .env.
+#Save the database data permanently so it doesn't disappear on restart.
+
+services:
+  web:
+    build: .
+    ports:
+      - "5001:5000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      - db
+
+
+#First machine is called web.
+#Connect port 5000 on your laptop to port 5000 inside the container
+#Load all the variables from your .env file and pass them into this container
+#'db' is the name of the second container below — this is how Flask finds Postgres.
+#Inside Docker, containers talk to each other using this service name.
+#Don't start the web container until the db container is up first
+
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: travel_app_db
+      POSTGRES_USER: srikaaviyaramadeve
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+#Second machine - db. Don't build it — just download ready-made
+#Postgres 15 image from Docker Hub.
+#Postgres starts up, create a database and user with these credentials.
+
+
+
+volumes:
+  postgres_data:
+
+
+#Containers are temporary — if you stop and restart the db container,
+#everything inside it disappears.
+#This line says "save the database data to a permanent
+#place called postgres_data on your laptop.
+
+
+
+
+
+

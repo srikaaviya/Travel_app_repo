@@ -1,18 +1,21 @@
 import os
 import json
+import re
 import markdown2
 from datetime import datetime
-from dotenv import load_dotenv
 from flask import Flask, render_template, request, session, redirect
+from config import Config
+from flask_mail import Mail, Message
 
-# --- IMPORTS FROM OUR NEW MODULES ---
+
 import database
-# Note: User created "Services" folder (Capital S), so we import from there.
 from Services import weather_service, ai_service
 
-load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
+app.config.from_object(Config)   # ← loads SECRET_KEY + all mail settings
+mail = Mail(app)
+
 
 # Initialize DB on start
 # database.create_db()
@@ -155,5 +158,41 @@ def reset():
     session.clear()
     return redirect("/")
 
+@app.route("/send-email", methods=["POST"])
+def send_email():
+    to_email = request.form.get("email")
+    trip_id = session.get("current_trip_id")
+
+    if not trip_id or not to_email:
+        return {"error": "Missing info"}, 400
+
+    # Get all chat messages for this trip
+    history = database.get_chat_history(trip_id)
+
+    # Get destination from DB
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT city FROM trips WHERE id = %s', (trip_id,))
+    row = cursor.fetchone()
+    conn.close()
+    city = row[0] if row else "your destination"
+
+    # Build plain text body from assistant messages
+    packing_content = "\n\n".join(
+        msg["message"] for msg in history if msg["role"] == "assistant"
+    )
+    # Strip HTML tags simply
+
+    packing_text = re.sub(r'<[^>]+>', '', packing_content)
+
+    msg = Message(
+        subject=f"🧳 Your Packing List for {city}",
+        sender=os.getenv("MAIL_USERNAME"),
+        recipients=[to_email],
+        body=f"Hi!\n\nHere's your packing list for {city}:\n\n{packing_text}\n\n— Travel Assistant"
+    )
+    mail.send(msg)
+    return {"message": "Email sent!"}
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",debug=True)

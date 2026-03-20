@@ -26,4 +26,11 @@ except Exception as e: is a bit lazy.
 It catches everything (even KeyboardInterrupt).
 It's better to catch specific errors (requests.ConnectionError).
 
+User Authentication: Add user sign-ups and logins (using Flask-Login or standard JWTs). 
+Allow users to save their generated packing lists or itineraries to their personal accounts.
 
+Caching: Integrate Redis to cache weather API responses. If 10 users search for "London" in the same hour, 
+you shouldn't call the weather API 10 times. This demonstrates you understand performance optimization.
+
+Rate Limiting: Protect your endpoints using something like Flask-Limiter. This shows you think about security 
+and cost-management (preventing someone from spamming your Gemini API key).

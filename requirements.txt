@@ -1,8 +1,9 @@
 flask
 python-dotenv
 requests
-google-genai
+groq
 markdown2
 pytest
 playwright
 psycopg2-binary
+Flask-Mail
