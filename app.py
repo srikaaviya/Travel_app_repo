@@ -78,10 +78,13 @@ def index():
                 Analyze this travel input: "{user_input}"
                 Rules:
                     1. If country mentioned, pick popular city.
-                    2. Return JSON: {{"is_valid": true, "city": "Name", "timeline": "now/future"}}
+                    2. If a province or state is mentioned, pick its most popular city.
+                    3. If a city is mentioned directly, use that city.
+                    4. Return ONLY the raw JSON object, no explanation, no markdown, no extra text: {{"is_valid": true, "city": "Name", "timeline": "now/future"}}
             """
             raw_json = ai_service.ask_gemini(analysis_prompt)
-            
+            # print(f"RAW AI RESPONSE: {raw_json}")
+
             # Handle errors
             if "⚠️" in raw_json or "Sorry" in raw_json or "unavailable" in raw_json:
                 if 'current_trip_id' not in session:
@@ -95,10 +98,14 @@ def index():
             
             # Quick cleanup to ensure JSON parsing works
             try:
-                clean_json = raw_json.replace("```json", "").replace("```", "")
-                data = json.loads(clean_json)
-                city = data.get("city", "London")
-                user_timeline = data.get("timeline", "now")
+                # clean_json = raw_json.replace("```json", "").replace("```", "")
+                clean_json = re.search(r'\{.*?\}', raw_json, re.DOTALL)
+                if clean_json:
+                    data = json.loads(clean_json.group())
+                    city = data.get("city", "London")
+                    user_timeline = data.get("timeline", "now")
+                else:
+                    city, user_timeline = "London", "now"
             except:
                 city, user_timeline = "London", "now"
 

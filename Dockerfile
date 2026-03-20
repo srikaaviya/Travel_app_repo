@@ -14,6 +14,6 @@ COPY . .
 EXPOSE 5000
 #container will listen on port 5000
 
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
 #When the container starts, run this command.
 #Exactly like typing python app.py in your terminal
