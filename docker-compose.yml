@@ -14,8 +14,10 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
+      - redis
 
 
 #First machine is called web.
@@ -38,11 +40,27 @@ services:
     ports:
       - "5432:5432"
 
-#Second machine - db. Don't build it — just download ready-made
-#Postgres 15 image from Docker Hub.
-#Postgres starts up, create a database and user with these credentials.
+  #Second machine - db. Don't build it — just download ready-made
+  #Postgres 15 image from Docker Hub.
+  #Postgres starts up, create a database and user with these credentials.
 
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
 
+  celery:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
 
 volumes:
   postgres_data:

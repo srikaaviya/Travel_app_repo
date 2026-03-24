@@ -7,3 +7,5 @@ pytest
 playwright
 psycopg2-binary
 Flask-Mail
+celery
+redis

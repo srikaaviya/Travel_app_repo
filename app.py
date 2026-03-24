@@ -6,6 +6,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, session, redirect
 from config import Config
 from flask_mail import Mail, Message
+from tasks import send_email_task
 
 
 import database
@@ -171,12 +172,9 @@ def send_email():
     trip_id = session.get("current_trip_id")
 
     if not trip_id or not to_email:
-        return {"error": "Missing info"}, 400
+        return redirect("/")
 
-    # Get all chat messages for this trip
-    history = database.get_chat_history(trip_id)
-
-    # Get destination from DB
+    # Get city from DB
     conn = database.get_db_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT city FROM trips WHERE id = %s', (trip_id,))
@@ -184,22 +182,18 @@ def send_email():
     conn.close()
     city = row[0] if row else "your destination"
 
-    # Build plain text body from assistant messages
+    # Get assistant messages
+    history = database.get_chat_history(trip_id)
     packing_content = "\n\n".join(
         msg["message"] for msg in history if msg["role"] == "assistant"
     )
-    # Strip HTML tags simply
-
     packing_text = re.sub(r'<[^>]+>', '', packing_content)
 
-    msg = Message(
-        subject=f"🧳 Your Packing List for {city}",
-        sender=os.getenv("MAIL_USERNAME"),
-        recipients=[to_email],
-        body=f"Hi!\n\nHere's your packing list for {city}:\n\n{packing_text}\n\n— Travel Assistant"
-    )
-    mail.send(msg)
-    return {"message": "Email sent!"}
+    # Fire and forget — Celery handles it in background
+    send_email_task.delay(to_email, city, packing_text)
+
+    return redirect("/")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0",debug=True)
