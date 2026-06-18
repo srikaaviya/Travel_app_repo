@@ -43,6 +43,16 @@ services:
   #Second machine - db. Don't build it — just download ready-made
   #Postgres 15 image from Docker Hub.
   #Postgres starts up, create a database and user with these credentials.
+  #The volumes section is used to map storage locations.
+  #The format is always [host_machine_location]:[container_internal_location].
+
+#  This is a Bind Mount. (./init-db:/docker-entrypoint-initdb.d)
+#  Explanation: The official PostgreSQL Docker image has a built-in startup script.
+#  When the database boots up for the very first time,
+#  it automatically checks the internal /docker-entrypoint-initdb.d directory and
+#  executes any .sql or .sh files it finds there to set up
+#  This line connects your local ./init-db folder to that internal directory,
+#  allowing PostgreSQL to automatically run your custom database initialization scripts on startup.
 
   redis:
     image: redis:7
@@ -62,6 +72,10 @@ services:
       - redis
       - db
 
+#Docker runs the Celery worker command. -A tasks means "look in tasks.py for the tasks".
+#  worker means "start listening for jobs".
+# redis url — tells both Flask and Celery where the post box
+
 volumes:
   postgres_data:
 
@@ -69,7 +83,7 @@ volumes:
 #Containers are temporary — if you stop and restart the db container,
 #everything inside it disappears.
 #This line says "save the database data to a permanent
-#place called postgres_data on your laptop.
+#place called postgres_data on your laptop."
 
 
 

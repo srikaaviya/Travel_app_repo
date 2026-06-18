@@ -1,4 +1,44 @@
+Why we added this
+Email sending was a blocking operation — Flask waited for the email to send before responding to the user.
+Celery + Redis makes it a background task — Flask responds instantly and email sends behind the scenes.
 
+1. User submits email form
+2. Flask receives it → calls send_email_task.delay()
+3. Task gets dropped into Redis queue instantly
+4. Flask redirects user back to page immediately
+5. Meanwhile Celery worker picks up the task from Redis
+6. Celery sends the email in background
+7. User has no idea any of this happened — page just loaded instantly
+
+
+Changes:
+docker-compose.yml
+    redis — the task queue (new)
+    celery — the background worker (new)
+
+requirements.txt
+    celery, redis
+
+created tasks.py
+
+app.py
+    # Added import at top
+    from tasks import send_email_task
+
+    # Changed in /send-email route
+    # Old — blocking
+    mail.send(msg)
+
+    # New — background, returns immediately
+    send_email_task.delay(to_email, city, packing_text)
+
+
+    ### How it works
+    ```
+    User clicks send → Flask calls .delay() → task drops into Redis →
+    Flask redirects immediately → Celery picks up task → sends email in background
+
+old app.py code
 # @app.route("/send-email", methods=["POST"])
 # def send_email():
 #     to_email = request.form.get("email")

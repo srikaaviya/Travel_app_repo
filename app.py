@@ -103,12 +103,12 @@ def index():
                 clean_json = re.search(r'\{.*?\}', raw_json, re.DOTALL)
                 if clean_json:
                     data = json.loads(clean_json.group())
-                    city = data.get("city", "London")
+                    city = data.get("city", "Unknown")
                     user_timeline = data.get("timeline", "now")
                 else:
-                    city, user_timeline = "London", "now"
+                    city, user_timeline = "Unknown", "now"
             except:
-                city, user_timeline = "London", "now"
+                city, user_timeline = "Unknown", "now"
 
             # 2. Get Weather (Using Weather Service)
             # Returns Tuple: (description_str, temp_int)
