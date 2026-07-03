@@ -9,10 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 #now install everything inside the container
 
 COPY . .
-#copy rest of project files
+
+RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
-#container will listen on port 5000
 
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:${PORT:-5000}"]
-#sh -c forces shell expansion so $PORT works on Railway.
+CMD ["./entrypoint.sh"]
