@@ -21,7 +21,10 @@ jwt = JWTManager(app)
 
 app.register_blueprint(auth_bp)
 
-database.run_migrations()
+try:
+    database.run_migrations()
+except Exception as e:
+    print(f"Migration failed (will retry on first request): {e}")
 
 
 @app.route("/health")

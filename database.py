@@ -7,6 +7,7 @@ from psycopg2.extras import RealDictCursor
 def get_db_connection():
     database_url = os.getenv("DATABASE_URL")
     if database_url:
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
         conn = psycopg2.connect(database_url)
     else:
         conn = psycopg2.connect(
@@ -21,13 +22,13 @@ def get_db_connection():
 
 def run_migrations():
     # Retry connection — Postgres may still be starting up in Docker
-    for attempt in range(5):
+    for attempt in range(10):
         try:
             conn = get_db_connection()
             break
         except psycopg2.OperationalError:
-            if attempt < 4:
-                time.sleep(2)
+            if attempt < 9:
+                time.sleep(3)
             else:
                 raise
     cursor = conn.cursor()
