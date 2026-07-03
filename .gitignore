@@ -5,6 +5,7 @@
 # Python temporary files
 __pycache__/
 *.pyc
+venv/
 
 # OS generated files
 .DS_Store

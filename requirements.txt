@@ -9,3 +9,5 @@ psycopg2-binary
 Flask-Mail
 celery
 redis
+flask-jwt-extended
+gunicorn

@@ -1,0 +1,6 @@
+1. run --> docker-compose up --build.
+2. see all the running in the desktop app
+redis image, postgres, travel-app-web, travel-app-celery
+3. then --> localhost:5000
+4. finally 'docker-compose down'
+

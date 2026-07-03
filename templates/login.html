@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login — Travel Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+        }
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 25px;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab-buttons button {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
+            font-size: 14px;
+        }
+        .tab-buttons button.active {
+            background: white;
+            border-bottom: 2px solid #3498db;
+            font-weight: bold;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-btn:hover {
+            background-color: #2980b9;
+        }
+        .error-msg {
+            color: #e74c3c;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Travel Assistant</h1>
+        <p class="subtitle">Login or create an account to start packing</p>
+
+        <div class="tab-buttons">
+            <button id="login-tab" class="active" onclick="showTab('login')">Login</button>
+            <button id="register-tab" onclick="showTab('register')">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="you@example.com" required>
+
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Your password" required>
+
+            <button type="submit" class="submit-btn">Login</button>
+            <p id="login-error" class="error-msg"></p>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+            <label for="reg-username">Username</label>
+            <input type="text" id="reg-username" placeholder="Pick a username" required>
+
+            <label for="reg-email">Email</label>
+            <input type="email" id="reg-email" placeholder="you@example.com" required>
+
+            <label for="reg-password">Password</label>
+            <input type="password" id="reg-password" placeholder="At least 6 characters" required minlength="6">
+
+            <button type="submit" class="submit-btn">Create Account</button>
+            <p id="register-error" class="error-msg"></p>
+        </form>
+    </div>
+
+    <script>
+        function showTab(tab) {
+            document.getElementById('login-form').classList.toggle('hidden', tab !== 'login'); // systemtab button
+            document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+            document.getElementById('login-tab').classList.toggle('active', tab === 'login');
+            document.getElementById('register-tab').classList.toggle('active', tab === 'register');
+        }
+
+        function saveTokenAndRedirect(token) {
+            localStorage.setItem('access_token', token);
+            document.cookie = 'access_token_cookie=' + token + '; path=/; SameSite=Lax';
+            window.location.href = '/';
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault(); // prevent full page reload
+            var errorEl = document.getElementById('login-error');
+            errorEl.style.display = 'none';
+
+            var res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('login-email').value,
+                    password: document.getElementById('login-password').value
+                })
+            });
+
+            var data = await res.json();
+
+            if (res.ok) {
+                saveTokenAndRedirect(data.access_token);
+            } else {
+                errorEl.textContent = data.error;
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            var errorEl = document.getElementById('register-error');
+            errorEl.style.display = 'none';
+
+            var res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('reg-username').value,
+                    email: document.getElementById('reg-email').value,
+                    password: document.getElementById('reg-password').value
+                })
+            });
+
+            var data = await res.json();
+
+            if (res.ok) {
+                saveTokenAndRedirect(data.access_token);
+            } else {
+                errorEl.textContent = data.error;
+                errorEl.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

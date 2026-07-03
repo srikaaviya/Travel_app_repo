@@ -1,8 +1,17 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(80) UNIQUE NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    password_hash VARCHAR(256) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS trips (
     id SERIAL PRIMARY KEY,
     city VARCHAR(100),
     weather VARCHAR(200),
-    essentials TEXT
+    essentials TEXT,
+    user_id INTEGER REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS chat_history (

@@ -1,10 +1,17 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class Config:
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
+
+    # JWT settings
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", os.getenv("FLASK_SECRET_KEY"))
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    JWT_TOKEN_LOCATION = ["headers", "cookies"]
+    JWT_COOKIE_CSRF_PROTECT = False
 
     # Email settings
     MAIL_SERVER = 'smtp.gmail.com'

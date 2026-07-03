@@ -57,12 +57,15 @@
 <body>
     <h1>Travel Packing Assistant</h1>
 
-    <div style="margin-top: 20px;">
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
         <a href="/reset" style="text-decoration: none;">
             <button type="button" style="background-color: #e74c3c; color: white; border: none; border-radius: 5px; padding: 10px 15px; cursor: pointer;">
                 Start New Trip
             </button>
         </a>
+        <button type="button" onclick="logout()" style="background-color: #95a5a6; color: white; border: none; border-radius: 5px; padding: 10px 15px; cursor: pointer;">
+            Logout
+        </button>
     </div>
 
     <form action="/" method="post">
@@ -92,7 +95,7 @@
         {% else %}
                 <p style="text-align: center; color: #888;">No messages yet. Start your journey!</p>
         {% endif %}
-    </div>>
+    </div>
 
     {% if chat_history %}
     <form action="/send-email" method="post" style="margin-top: 20px;">
@@ -107,5 +110,21 @@
 | safe tells Flask: "I trust this content, go ahead and render the formatting."
 {% endif %} closes the conditional. -->
 
+    <script>
+        function logout() {
+            localStorage.removeItem('access_token');
+            document.cookie = 'access_token_cookie=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            window.location.href = '/login';
+        }
+
+        if (window.location.search.includes('email_sent=1')) {
+            var popup = document.createElement('div');
+            popup.textContent = 'Mail sent!';
+            popup.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:12px 24px;border-radius:8px;font-size:16px;z-index:999;';
+            document.body.appendChild(popup);
+            setTimeout(function() { popup.remove(); }, 2500);
+            history.replaceState(null, '', '/');
+        }
+    </script>
 </body>
 </html>
