@@ -14,5 +14,5 @@ COPY . .
 EXPOSE 5000
 #container will listen on port 5000
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
-#Production server. Railway overrides this via railway.toml startCommand.
+CMD gunicorn app:app --bind 0.0.0.0:${PORT:-5000}
+#Uses Railway's PORT env var, falls back to 5000 for local Docker.
