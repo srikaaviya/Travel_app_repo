@@ -24,6 +24,11 @@ app.register_blueprint(auth_bp)
 database.run_migrations()
 
 
+@app.route("/health")
+def health():
+    return "ok", 200
+
+
 @app.route("/login")
 def login_page():
     return render_template("login.html")
