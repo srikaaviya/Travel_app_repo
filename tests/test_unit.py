@@ -14,6 +14,9 @@ def client():
     with app.test_client() as client:
         yield client
 
+# This sets up a mock "client" (like a simulated web browser) that allows tests to
+# make requests to the Flask application without actually starting a live web server.
+
 
 def get_auth_cookie(client, username='testuser', email='test@example.com'):
     """Register a test user and return the JWT token as a cookie."""
